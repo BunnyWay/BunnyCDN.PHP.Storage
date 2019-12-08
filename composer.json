@@ -1,7 +1,7 @@
 {
     "name": "platformcommunity/bunnycdn-storage",
     "description": "Library for BunnyCDN Storage",
-    "license": "N/A (Pending)",
+    "license": "MIT",
     "authors": [
         {
             "name": "Dejan Grofelnik Pelzel",
