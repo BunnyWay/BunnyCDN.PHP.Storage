@@ -1,6 +1,6 @@
 <?php
 
-class BunnyCDNStorage 
+class BunnyCDNStorage
 {
     /**
         The name of the storage zone we are working on
@@ -18,9 +18,9 @@ class BunnyCDNStorage
     private $bunnyCDNBaseUrl = 'https://storage.bunnycdn.com/';
 
     /**
-        Initializes a new instance of the BunnyCDNStorage class 
+        Initializes a new instance of the BunnyCDNStorage class
     */
-    public function __construct($storageZoneName, $apiAccessKey) 
+    public function __construct($storageZoneName, $apiAccessKey)
     {
         $this->storageZoneName = $storageZoneName;
         $this->apiAccessKey = $apiAccessKey;
@@ -51,7 +51,7 @@ class BunnyCDNStorage
     {
         // Open the local file
         $fileStream = fopen($localPath, "r");
-        if($fileStream == false) 
+        if($fileStream == false)
         {
             throw new BunnyCDNStorageException("The local file could not be opened.");
         }
@@ -67,7 +67,7 @@ class BunnyCDNStorage
     {
         // Open the local file
         $fileStream = fopen($localPath, "w+");
-        if($fileStream == false) 
+        if($fileStream == false)
         {
             throw new BunnyCDNStorageException("The local file could not be opened for writing.");
         }
@@ -84,7 +84,7 @@ class BunnyCDNStorage
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
         curl_setopt($ch, CURLOPT_FAILONERROR, 0);
-         
+
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             "AccessKey: {$this->apiAccessKey}",
         ));
@@ -130,7 +130,7 @@ class BunnyCDNStorage
             throw new BunnyCDNStorageException("An unknown error has occured during the request. Status code: " . $responseCode);
         }
 
-        return $output;   
+        return $output;
     }
 
     /**
@@ -150,7 +150,7 @@ class BunnyCDNStorage
             {
                 if (!$this->endsWith($path, '/'))
                 {
-                    $path = $path + "/";
+                    $path = $path . "/";
                 }
             }
             else
