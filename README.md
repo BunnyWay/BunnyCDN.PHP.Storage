@@ -15,7 +15,7 @@ The BunnyCDNStorage constructor takes the following parameters:
 - **storageZoneRegion** - The storage zone region code (de, ny, or sg)
 
 
-
+### Navigation:
 
 - [Upload](#uploading-objects)
 - [List](#listing-objects)
