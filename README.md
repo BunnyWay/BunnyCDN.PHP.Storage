@@ -7,13 +7,14 @@ The storage library is very simple to use. First, create the basic BunnyCDNStora
 
 ```
 $bunnyCDNStorage = new BunnyCDNStorage("storagezonename", "MyAccessKey", "sg");
-
 ```
 
 The BunnyCDNStorage constructor takes the following parameters:
 - **storageZoneName** - The name of your storage zone
 - **apiAccessKey** - The API access key (password)
 - **storageZoneRegion** - The storage zone region code (de, ny, or sg)
+
+
 
 
 - [Upload](#uploading-objects)
