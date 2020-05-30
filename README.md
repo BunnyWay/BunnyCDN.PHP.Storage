@@ -6,7 +6,13 @@ The official PHP library used for interacting with the BunnyCDN Storage API.
 The storage library is very simple to use. First, create the basic BunnyCDNStorage object with the authentication details. It's the basic object for interaction with the API.
 
 ```
-$bunnyCDNStorage = new BunnyCDNStorage("storagezonename", "MyAccessKey");
+$bunnyCDNStorage = new BunnyCDNStorage("storagezonename", "MyAccessKey", "sg");
+
+The BunnyCDNStorage constructor takes the following parameters:
+- **storageZoneName** - The name of your storage zone
+- **apiAccessKey** - The API access key (password)
+- **storageZoneRegion** - The storage zone region code (de, ny, or sg)
+
 ```
 - [Upload](#uploading-objects)
 - [List](#listing-objects)
