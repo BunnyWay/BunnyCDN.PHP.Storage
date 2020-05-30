@@ -13,17 +13,35 @@ class BunnyCDNStorage
     public $apiAccessKey = '';
 
     /**
-        The base BunnyCDN URL
+        The storage zone region code
     */
-    private $bunnyCDNBaseUrl = 'https://storage.bunnycdn.com/';
+    private $storageZoneRegion = 'de';
 
     /**
         Initializes a new instance of the BunnyCDNStorage class
     */
-    public function __construct($storageZoneName, $apiAccessKey)
+    public function __construct($storageZoneName, $apiAccessKey, $storageZoneRegion = "de") 
     {
         $this->storageZoneName = $storageZoneName;
         $this->apiAccessKey = $apiAccessKey;
+        $this->storageZoneRegion = strtolower($storageZoneRegion);
+
+        $this->updateBaseUrlForRegion();
+    }
+
+    /*
+        Returns the base URL with the endpoint based on the current storage zone region
+    */
+    private function getBaseUrl()
+    {
+        if($this->storageZoneRegion == "de" || $this->storageZoneRegion == "")
+        {
+            return "https://storage.bunnycdn.com/";
+        }
+        else
+        {
+            return "https://{$this->storageZoneRegion}.storage.bunnycdn.com/";
+        }
     }
 
     /**
@@ -80,7 +98,7 @@ class BunnyCDNStorage
     private function sendHttpRequest($url, $method = "GET", $uploadFile = NULL, $uploadFileSize = NULL, $downloadFileHandler = NULL)
     {
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://storage.bunnycdn.com/" . $url);
+        curl_setopt($ch, CURLOPT_URL, $this->getBaseUrl() . $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
         curl_setopt($ch, CURLOPT_FAILONERROR, 0);
