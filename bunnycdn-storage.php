@@ -25,8 +25,6 @@ class BunnyCDNStorage
         $this->storageZoneName = $storageZoneName;
         $this->apiAccessKey = $apiAccessKey;
         $this->storageZoneRegion = strtolower($storageZoneRegion);
-
-        $this->updateBaseUrlForRegion();
     }
 
     /*
