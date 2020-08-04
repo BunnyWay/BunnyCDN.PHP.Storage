@@ -19,20 +19,34 @@ class BunnyCDNStorage
     public $apiAccessKey = '';
 
     /**
-     * @var string The base BunnyCDN URL
+     * @var string The region used for the request
      */
-    private $bunnyCDNBaseUrl = 'https://storage.bunnycdn.com/';
+    public $storageZoneRegion = 'de';
 
     /**
      * Initializes a new instance of the BunnyCDNStorage class
      *
      * @param $storageZoneName
      * @param $apiAccessKey
+     * @param $storageZoneRegion
      */
-    public function __construct($storageZoneName, $apiAccessKey)
+    public function __construct($storageZoneName, $apiAccessKey, $storageZoneRegion)
     {
         $this->storageZoneName = $storageZoneName;
         $this->apiAccessKey = $apiAccessKey;
+        $this->storageZoneRegion = $storageZoneRegion;
+    }
+
+    /**
+     * Returns the base URL with the endpoint based on the current storage zone region
+     *
+     * @return string
+     */
+    public function getBaseUrl()
+    {
+        return $this->storageZoneRegion === "de" || !$this->storageZoneRegion
+            ? 'https://storage.bunnycdn.com/'
+            : "https://" . $this->storageZoneRegion . ".storage.bunnycdn.com/";
     }
 
     /**
@@ -45,7 +59,7 @@ class BunnyCDNStorage
     public function getStorageObjects($path)
     {
         $normalizedPath = $this->normalizePath($path, true);
-        return json_decode($this->sendHttpRequest($normalizedPath));
+        return json_decode($this->sendHttpRequest($normalizedPath), true);
     }
 
 
@@ -117,7 +131,7 @@ class BunnyCDNStorage
     private function sendHttpRequest($url, $method = 'GET', $uploadFile = NULL, $uploadFileSize = NULL, $downloadFileHandler = NULL)
     {
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->bunnyCDNBaseUrl . $url);
+        curl_setopt($ch, CURLOPT_URL, $this->getBaseUrl() . $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
         curl_setopt($ch, CURLOPT_FAILONERROR, 0);
@@ -134,11 +148,9 @@ class BunnyCDNStorage
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
         }
 
-
         if ($method === 'GET' && $downloadFileHandler != NULL) {
             curl_setopt($ch, CURLOPT_FILE, $downloadFileHandler);
         }
-
 
         $output = curl_exec($ch);
         $curlError = curl_errno($ch);
