@@ -59,9 +59,8 @@ class BunnyCDNStorage
     public function getStorageObjects($path)
     {
         $normalizedPath = $this->normalizePath($path, true);
-        return json_decode($this->sendHttpRequest($normalizedPath), true);
+        return json_decode($this->sendHttpRequest($normalizedPath));
     }
-
 
     /**
      * Delete an object at the given path. If the object is a directory, the contents will also be deleted.
