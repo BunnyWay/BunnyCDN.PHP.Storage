@@ -130,7 +130,7 @@ class BunnyCDNStorage
 
         if($curlError)
         {
-            throw new BunnyCDNStorageException("An unknown error has occured during the request. Status code: " . $curlError);
+            throw new BunnyCDNStorageException("An unknown error has occurred during the request. Status code: " . $curlError);
         }
 
         if($responseCode == 404)
@@ -143,7 +143,7 @@ class BunnyCDNStorage
         }
         else if($responseCode < 200 || $responseCode > 299)
         {
-            throw new BunnyCDNStorageException("An unknown error has occured during the request. Status code: " . $responseCode);
+            throw new BunnyCDNStorageException("An unknown error has occurred during the request. Status code: " . $responseCode);
         }
 
         return $output;
