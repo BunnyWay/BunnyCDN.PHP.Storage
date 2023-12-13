@@ -1,42 +1,55 @@
-# BunnyCDN.PHP.Storage
+# Bunny Storage PHP library
+
 The official PHP library used for interacting with the BunnyCDN Storage API.
 
-### How to use:
-
-The storage library is very simple to use. First, create the basic BunnyCDNStorage object with the authentication details. It's the basic object for interaction with the API.
+## Install
 
 ```
-$bunnyCDNStorage = new BunnyCDNStorage("storagezonename", "MyAccessKey", "sg");
+composer require bunnycdn/storage
+```
+
+## Usage
+
+Create an instance of the `\Bunny\Storage\Client` with the authentication details
+
+```
+$client = new \Bunny\Storage\Client('access-key', 'storage-zone', 'sg');
 ```
 
 The BunnyCDNStorage constructor takes the following parameters:
-- **storageZoneName** - The name of your storage zone
 - **apiAccessKey** - The API access key (password)
+- **storageZoneName** - The name of your storage zone
 - **storageZoneRegion** - The storage zone region code (de, ny, or sg)
-
 
 ### Navigation:
 
 - [Upload](#uploading-objects)
-- [List](#listing-objects)
 - [Download](#downloading-objects)
+- [List](#listing-objects)
 - [Delete](#deleting-objects)
 
-<br/>
+---
 
-## Uploading objects:
-To upload a file to the storage, you can use the uploadFile method. If the path to the object does not exist yet, it will be automatically created.
+### Uploading objects
 
 ```
-$bunnyCDNStorage->uploadFile("local/file/path/helloworld.txt", "/storagezonename/helloworld.txt");
+$client->upload('/path/to/local/file.txt', 'remote/path/hello-world.txt');
 ```
 
-<br/>
+---
 
-## Listing objects:
-Get a list of of all objects on the given path.
+### Downloading objects
+
 ```
-$bunnyCDNStorage->getStorageObjects("/storagezonename/");
+$client->download('remote/path/hello-world.txt', '/path/to/local/file.txt');
+```
+
+---
+
+### Listing objects
+
+```
+$items = $client->listFiles('remote/path/');
 ```
 
 The StorageObject contains the following properties:
@@ -53,20 +66,10 @@ The StorageObject contains the following properties:
 - **StorageZoneId** - The ID of the storage zone that the object is linked to
 - **FullPath** - The full path to the file
 
+---
 
-<br/>
-
-## Downloading objects:
-To download an object from the storage to a local file, you can use the downloadFile method.
+### Deleting objects
 
 ```
-$bunnyCDNStorage->downloadFile("/storagezonename/helloworld.txt", "local/file/path/helloworld.txt");
-```
-
-<br/>
-
-## Deleting objects:
-Deleting supports both files and directories. If the target object is a directory, the directory content will also be deleted.
-```
-$bunnyCDNStorage->deleteObject("/storagezonename/helloworld.txt");
+$client->delete('remote/path/hello-world.txt');
 ```
