@@ -1,0 +1,12 @@
+{
+    "name": "bunnycdn/storage",
+    "autoload": {
+        "psr-4": {
+            "Bunny\\Storage\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=8.0.0",
+        "ext-curl": "*"
+    }
+}
