@@ -11,6 +11,8 @@ class Client
     private string $apiAccessKey;
     private string $storageZoneName;
     private string $storageZoneRegion;
+    private string $baseUrl;
+    private \GuzzleHttp\Client $httpClient;
 
     public function __construct(
         string $apiKey,
@@ -20,20 +22,59 @@ class Client
         $this->apiAccessKey = $apiKey;
         $this->storageZoneRegion = $storageZoneRegion;
         $this->storageZoneName = $storageZoneName;
+
+        if (self::DEFAULT_STORAGE_ZONE === $this->storageZoneRegion || '' === $this->storageZoneRegion) {
+            $this->baseUrl = 'https://storage.bunnycdn.com/';
+        } else {
+            $this->baseUrl = sprintf('https://%s.storage.bunnycdn.com/', $this->storageZoneRegion);
+        }
+
+        $this->httpClient = new \GuzzleHttp\Client([
+            'allow_redirects' => false,
+            'http_errors' => false,
+        ]);
     }
 
     public function listFiles(string $path): mixed
     {
-        $normalizedPath = $this->normalizePath($path, true);
+        $response = $this->makeRequest('GET', $this->normalizePath($path, true));
 
-        return json_decode($this->sendHttpRequest($normalizedPath));
+        if (401 === $response->getStatusCode()) {
+            throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
+        }
+
+        if (200 === $response->getStatusCode()) {
+            return json_decode($response->getBody()->getContents(), true);
+        }
+
+        throw new Exception('Could not list files');
     }
 
     public function delete(string $path): mixed
     {
-        $normalizedPath = $this->normalizePath($path);
+        $response = $this->makeRequest('DELETE', $this->normalizePath($path));
 
-        return $this->sendHttpRequest($normalizedPath, 'DELETE');
+        if (401 === $response->getStatusCode()) {
+            throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
+        }
+
+        if (200 === $response->getStatusCode()) {
+            return $response->getBody()->getContents();
+        }
+
+        /** @var bool|array{Message: string}|null $json */
+        $json = json_decode($response->getBody()->getContents(), true);
+        $message = 'Could not delete file';
+
+        if (isset($json['Message']) && is_array($json) && is_string($json['Message'])) {
+            $message = (string) $json['Message'];
+        }
+
+        if (404 === $response->getStatusCode()) {
+            throw new FileNotFoundException($message);
+        }
+
+        throw new Exception($message);
     }
 
     public function upload(string $localPath, string $path): string
@@ -43,14 +84,17 @@ class Client
             throw new Exception('The local file could not be opened.');
         }
 
-        $dataLength = filesize($localPath);
-        if (false === $dataLength) {
-            throw new Exception('Local file not found: '.$localPath);
+        $response = $this->makeRequest('PUT', $this->normalizePath($path), ['body' => $fileStream]);
+
+        if (401 === $response->getStatusCode()) {
+            throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
         }
 
-        $normalizedPath = $this->normalizePath($path);
+        if (201 === $response->getStatusCode()) {
+            return $response->getBody()->getContents();
+        }
 
-        return $this->sendHttpRequest($normalizedPath, 'PUT', $fileStream, $dataLength);
+        throw new Exception('Could not upload file');
     }
 
     public function download(string $path, string $localPath): string
@@ -60,75 +104,63 @@ class Client
             throw new Exception('The local file could not be opened for writing.');
         }
 
-        $normalizedPath = $this->normalizePath($path);
+        $response = $this->makeRequest('GET', $this->normalizePath($path));
 
-        return $this->sendHttpRequest($normalizedPath, 'GET', null, null, $fileStream);
+        if (401 === $response->getStatusCode()) {
+            throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
+        }
+
+        if (404 === $response->getStatusCode()) {
+            throw new FileNotFoundException($path);
+        }
+
+        if (200 === $response->getStatusCode()) {
+            file_put_contents($localPath, $response->getBody());
+
+            return $localPath;
+        }
+
+        throw new Exception('Could not download file');
     }
 
     public function exists(string $path): bool
     {
-        try {
-            $result = $this->sendHttpRequest($path, 'DESCRIBE');
-            if ('' === $result) {
-                return false;
-            }
+        $response = $this->makeRequest('DESCRIBE', $this->normalizePath($path));
 
-            $metadata = json_decode($result, true);
-            if (!is_array($metadata)) {
-                return false;
-            }
+        if (401 === $response->getStatusCode()) {
+            throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
+        }
 
-            return isset($metadata['Guid']) && 36 === strlen($metadata['Guid']);
-        } catch (FileNotFoundException $e) {
+        if (404 === $response->getStatusCode()) {
             return false;
         }
+
+        if (200 !== $response->getStatusCode()) {
+            throw new Exception('Could not verify if the file exists');
+        }
+
+        $metadata = json_decode($response->getBody()->getContents(), true);
+        if (!is_array($metadata)) {
+            return false;
+        }
+
+        return isset($metadata['Guid']) && 36 === strlen($metadata['Guid']);
     }
 
     /**
-     * @param resource $uploadFile
-     * @param resource $downloadFileHandler
+     * @param array<string, mixed> $options
      */
-    private function sendHttpRequest(string $url, string $method = 'GET', $uploadFile = null, int $uploadFileSize = null, $downloadFileHandler = null): string
+    private function makeRequest(string $method, string $path, array $options = []): \Psr\Http\Message\ResponseInterface
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->getBaseUrl().$url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
-        curl_setopt($ch, CURLOPT_FAILONERROR, 0);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['AccessKey: '.$this->apiAccessKey]);
+        $url = $this->baseUrl.$path;
 
-        if ('PUT' === $method && null !== $uploadFile) {
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_UPLOAD, 1);
-            curl_setopt($ch, CURLOPT_INFILE, $uploadFile);
-            curl_setopt($ch, CURLOPT_INFILESIZE, $uploadFileSize);
-        } elseif ('GET' !== $method) {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-        }
+        $options = array_merge([
+            'headers' => [
+                'AccessKey' => $this->apiAccessKey,
+            ],
+        ], $options);
 
-        if ('GET' === $method && null !== $downloadFileHandler) {
-            curl_setopt($ch, CURLOPT_FILE, $downloadFileHandler);
-        }
-
-        /** @var string|false $output */
-        $output = curl_exec($ch);
-        $curlError = curl_errno($ch);
-        $responseCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if (false === $output) {
-            throw new Exception('An unknown error has occurred during the request. Status code: '.$curlError);
-        }
-
-        if (404 === $responseCode) {
-            throw new FileNotFoundException($url);
-        } elseif (401 === $responseCode) {
-            throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
-        } elseif ($responseCode < 200 || $responseCode > 299) {
-            throw new Exception('An unknown error has occurred during the request. Status code: '.$responseCode);
-        }
-
-        return $output;
+        return $this->httpClient->request($method, $url, $options);
     }
 
     private function normalizePath(string $path, bool $isDirectory = false): string
@@ -155,14 +187,5 @@ class Client
         }
 
         return $path;
-    }
-
-    private function getBaseUrl(): string
-    {
-        if (self::DEFAULT_STORAGE_ZONE == $this->storageZoneRegion || '' == $this->storageZoneRegion) {
-            return 'https://storage.bunnycdn.com/';
-        } else {
-            return "https://{$this->storageZoneRegion}.storage.bunnycdn.com/";
-        }
     }
 }
