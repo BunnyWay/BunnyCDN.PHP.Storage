@@ -6,28 +6,23 @@ namespace Bunny\Storage;
 
 class Client
 {
-    private const DEFAULT_STORAGE_ZONE = 'de';
-
     private string $apiAccessKey;
     private string $storageZoneName;
-    private string $storageZoneRegion;
     private string $baseUrl;
     private \GuzzleHttp\Client $httpClient;
 
     public function __construct(
         string $apiKey,
         string $storageZoneName,
-        string $storageZoneRegion = self::DEFAULT_STORAGE_ZONE,
+        string $storageZoneRegion = Region::FALKENSTEIN,
     ) {
-        $this->apiAccessKey = $apiKey;
-        $this->storageZoneRegion = $storageZoneRegion;
-        $this->storageZoneName = $storageZoneName;
-
-        if (self::DEFAULT_STORAGE_ZONE === $this->storageZoneRegion || '' === $this->storageZoneRegion) {
-            $this->baseUrl = 'https://storage.bunnycdn.com/';
-        } else {
-            $this->baseUrl = sprintf('https://%s.storage.bunnycdn.com/', $this->storageZoneRegion);
+        if (!isset(Region::LIST[$storageZoneRegion])) {
+            throw new InvalidRegionException();
         }
+
+        $this->apiAccessKey = $apiKey;
+        $this->storageZoneName = $storageZoneName;
+        $this->baseUrl = Region::getBaseUrl($storageZoneRegion);
 
         $this->httpClient = new \GuzzleHttp\Client([
             'allow_redirects' => false,
