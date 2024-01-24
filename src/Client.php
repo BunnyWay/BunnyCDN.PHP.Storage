@@ -97,13 +97,8 @@ class Client
         throw new Exception('Could not upload file');
     }
 
-    public function download(string $path, string $localPath): string
+    public function getContents(string $path): string
     {
-        $fileStream = fopen($localPath, 'w+');
-        if (false === $fileStream) {
-            throw new Exception('The local file could not be opened for writing.');
-        }
-
         $response = $this->makeRequest('GET', $this->normalizePath($path));
 
         if (401 === $response->getStatusCode()) {
@@ -115,12 +110,21 @@ class Client
         }
 
         if (200 === $response->getStatusCode()) {
-            file_put_contents($localPath, $response->getBody());
-
-            return $localPath;
+            return $response->getBody()->getContents();
         }
 
         throw new Exception('Could not download file');
+    }
+
+    public function download(string $path, string $localPath): string
+    {
+        $result = file_put_contents($localPath, $this->getContents($path));
+
+        if (false === $result) {
+            throw new Exception('The local file could not be opened for writing.');
+        }
+
+        return $localPath;
     }
 
     public function exists(string $path): bool
