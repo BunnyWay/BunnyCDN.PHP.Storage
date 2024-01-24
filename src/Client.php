@@ -77,6 +77,11 @@ class Client
         throw new Exception($message);
     }
 
+    public function putContents(string $path, string $contents): string
+    {
+        return $this->makeUploadRequest($path, ['body' => $contents]);
+    }
+
     public function upload(string $localPath, string $path): string
     {
         $fileStream = fopen($localPath, 'r');
@@ -84,7 +89,15 @@ class Client
             throw new Exception('The local file could not be opened.');
         }
 
-        $response = $this->makeRequest('PUT', $this->normalizePath($path), ['body' => $fileStream]);
+        return $this->makeUploadRequest($path, ['body' => $fileStream]);
+    }
+
+    /**
+     * @param array{body: mixed} $options
+     */
+    private function makeUploadRequest(string $path, array $options): string
+    {
+        $response = $this->makeRequest('PUT', $this->normalizePath($path), $options);
 
         if (401 === $response->getStatusCode()) {
             throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
