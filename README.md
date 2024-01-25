@@ -12,14 +12,14 @@ composer require bunnycdn/storage
 
 Create an instance of the `\Bunny\Storage\Client` with the authentication details
 
-```
-$client = new \Bunny\Storage\Client('access-key', 'storage-zone', 'sg');
+```php
+$client = new \Bunny\Storage\Client('access-key', 'storage-zone', \Bunny\Storage\Region::SINGAPORE);
 ```
 
 The BunnyCDNStorage constructor takes the following parameters:
 - **apiAccessKey** - The API access key (password)
 - **storageZoneName** - The name of your storage zone
-- **storageZoneRegion** - The storage zone region code (de, ny, or sg)
+- **storageZoneRegion** - The storage zone region [code](src/Region.php#L9-L17) (de, ny, or sg)
 
 ### Navigation:
 
@@ -27,12 +27,14 @@ The BunnyCDNStorage constructor takes the following parameters:
 - [Download](#downloading-objects)
 - [List](#listing-objects)
 - [Delete](#deleting-objects)
+- [putContents](#put-file-contents)
+- [getContents](#get-file-contents)
 
 ---
 
 ### Uploading objects
 
-```
+```php
 $client->upload('/path/to/local/file.txt', 'remote/path/hello-world.txt');
 ```
 
@@ -40,7 +42,7 @@ $client->upload('/path/to/local/file.txt', 'remote/path/hello-world.txt');
 
 ### Downloading objects
 
-```
+```php
 $client->download('remote/path/hello-world.txt', '/path/to/local/file.txt');
 ```
 
@@ -48,7 +50,7 @@ $client->download('remote/path/hello-world.txt', '/path/to/local/file.txt');
 
 ### Listing objects
 
-```
+```php
 $items = $client->listFiles('remote/path/');
 ```
 
@@ -70,6 +72,24 @@ The StorageObject contains the following properties:
 
 ### Deleting objects
 
-```
+```php
 $client->delete('remote/path/hello-world.txt');
+```
+
+---
+
+### Put file contents
+
+```php
+$content = 'Hello, world!';
+$client->putContents('hello-world.txt', $content);
+```
+
+---
+
+### Get file contents
+
+```php
+$content = $client->getContents('hello-world.txt');
+echo $content; // Hello, world!
 ```
