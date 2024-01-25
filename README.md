@@ -78,6 +78,22 @@ $client->delete('remote/path/hello-world.txt');
 
 ---
 
+### Delete multiple objects
+
+```php
+$errors = $client->deleteMultiple(['file1.txt', 'file2.txt', 'non-existing.txt']);
+var_dump($errors);
+
+/*
+array(1) {
+  'non-existing.txt' =>
+  string(16) "Object not found"
+}
+*/
+```
+
+---
+
 ### Put file contents
 
 ```php

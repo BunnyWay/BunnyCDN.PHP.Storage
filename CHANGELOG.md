@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for download/upload content in memory with `Client::getContents()` and `Client::putContents()`;
+- Support for deleting multiple files in parallel with `Client::deleteMultiple()`;
 
 ### Changed
 

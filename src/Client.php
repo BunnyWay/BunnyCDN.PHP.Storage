@@ -27,12 +27,16 @@ class Client
         $this->httpClient = new \GuzzleHttp\Client([
             'allow_redirects' => false,
             'http_errors' => false,
+            'base_uri' => $this->baseUrl,
+            'headers' => [
+                'AccessKey' => $this->apiAccessKey,
+            ],
         ]);
     }
 
     public function listFiles(string $path): mixed
     {
-        $response = $this->makeRequest('GET', $this->normalizePath($path, true));
+        $response = $this->httpClient->request('GET', $this->normalizePath($path, true));
 
         if (401 === $response->getStatusCode()) {
             throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
@@ -47,7 +51,7 @@ class Client
 
     public function delete(string $path): mixed
     {
-        $response = $this->makeRequest('DELETE', $this->normalizePath($path));
+        $response = $this->httpClient->request('DELETE', $this->normalizePath($path));
 
         if (401 === $response->getStatusCode()) {
             throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
@@ -92,7 +96,7 @@ class Client
      */
     private function makeUploadRequest(string $path, array $options): string
     {
-        $response = $this->makeRequest('PUT', $this->normalizePath($path), $options);
+        $response = $this->httpClient->request('PUT', $this->normalizePath($path), $options);
 
         if (401 === $response->getStatusCode()) {
             throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
@@ -107,7 +111,7 @@ class Client
 
     public function getContents(string $path): string
     {
-        $response = $this->makeRequest('GET', $this->normalizePath($path));
+        $response = $this->httpClient->request('GET', $this->normalizePath($path));
 
         if (401 === $response->getStatusCode()) {
             throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
@@ -137,7 +141,7 @@ class Client
 
     public function exists(string $path): bool
     {
-        $response = $this->makeRequest('DESCRIBE', $this->normalizePath($path));
+        $response = $this->httpClient->request('DESCRIBE', $this->normalizePath($path));
 
         if (401 === $response->getStatusCode()) {
             throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
@@ -157,22 +161,6 @@ class Client
         }
 
         return isset($metadata['Guid']) && 36 === strlen($metadata['Guid']);
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     */
-    private function makeRequest(string $method, string $path, array $options = []): \Psr\Http\Message\ResponseInterface
-    {
-        $url = $this->baseUrl.$path;
-
-        $options = array_merge([
-            'headers' => [
-                'AccessKey' => $this->apiAccessKey,
-            ],
-        ], $options);
-
-        return $this->httpClient->request($method, $url, $options);
     }
 
     private function normalizePath(string $path, bool $isDirectory = false): string
@@ -199,5 +187,39 @@ class Client
         }
 
         return $path;
+    }
+
+    /**
+     * @param string[] $to_delete
+     *
+     * @return array<string, string>
+     */
+    public function deleteMultiple(array $to_delete): array
+    {
+        $requests = [];
+
+        foreach ($to_delete as $path) {
+            $requests[$path] = $this->httpClient->requestAsync('DELETE', $this->normalizePath($path));
+        }
+
+        $results = \GuzzleHttp\Promise\Utils::unwrap($requests);
+        $errors = [];
+
+        /** @var \Psr\Http\Message\ResponseInterface $response */
+        foreach ($results as $path => $response) {
+            if (200 !== $response->getStatusCode()) {
+                $data = json_decode($response->getBody()->getContents(), true);
+                if (JSON_ERROR_NONE === json_last_error()) {
+                    if (is_array($data) && isset($data['Message'])) {
+                        $errors[$path] = $data['Message'];
+                        continue;
+                    }
+                }
+
+                $errors[$path] = $response->getReasonPhrase();
+            }
+        }
+
+        return $errors;
     }
 }
