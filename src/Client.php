@@ -15,6 +15,7 @@ class Client
         string $apiKey,
         string $storageZoneName,
         string $storageZoneRegion = Region::FALKENSTEIN,
+        ?\GuzzleHttp\Client $httpClient = null
     ) {
         if (!isset(Region::LIST[$storageZoneRegion])) {
             throw new InvalidRegionException();
@@ -24,7 +25,7 @@ class Client
         $this->storageZoneName = $storageZoneName;
         $this->baseUrl = Region::getBaseUrl($storageZoneRegion);
 
-        $this->httpClient = new \GuzzleHttp\Client([
+        $this->httpClient = $httpClient ?? new \GuzzleHttp\Client([
             'allow_redirects' => false,
             'http_errors' => false,
             'base_uri' => $this->baseUrl,
@@ -51,7 +52,8 @@ class Client
 
     public function delete(string $path): mixed
     {
-        $response = $this->httpClient->request('DELETE', $this->normalizePath($path));
+        $isDirectory = str_ends_with($path, '/');
+        $response = $this->httpClient->request('DELETE', $this->normalizePath($path, $isDirectory));
 
         if (401 === $response->getStatusCode()) {
             throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
@@ -70,7 +72,7 @@ class Client
         }
 
         if (404 === $response->getStatusCode()) {
-            throw new FileNotFoundException($message);
+            throw new FileNotFoundException($path);
         }
 
         throw new Exception($message);
@@ -199,7 +201,8 @@ class Client
         $requests = [];
 
         foreach ($to_delete as $path) {
-            $requests[$path] = $this->httpClient->requestAsync('DELETE', $this->normalizePath($path));
+            $isDirectory = str_ends_with($path, '/');
+            $requests[$path] = $this->httpClient->requestAsync('DELETE', $this->normalizePath($path, $isDirectory));
         }
 
         $results = \GuzzleHttp\Promise\Utils::unwrap($requests);
