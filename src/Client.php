@@ -35,7 +35,10 @@ class Client
         ]);
     }
 
-    public function listFiles(string $path): mixed
+    /**
+     * @return FileInfo[]
+     */
+    public function listFiles(string $path): array
     {
         $response = $this->httpClient->request('GET', $this->normalizePath($path, true));
 
@@ -44,13 +47,13 @@ class Client
         }
 
         if (200 === $response->getStatusCode()) {
-            return json_decode($response->getBody()->getContents(), true);
+            return $this->convertIntoFileInfo(json_decode($response->getBody()->getContents(), true));
         }
 
         throw new Exception('Could not list files');
     }
 
-    public function delete(string $path): mixed
+    public function delete(string $path): void
     {
         $isDirectory = str_ends_with($path, '/');
         $response = $this->httpClient->request('DELETE', $this->normalizePath($path, $isDirectory));
@@ -60,7 +63,7 @@ class Client
         }
 
         if (200 === $response->getStatusCode()) {
-            return $response->getBody()->getContents();
+            return;
         }
 
         /** @var bool|array{Message: string}|null $json */
@@ -78,25 +81,25 @@ class Client
         throw new Exception($message);
     }
 
-    public function putContents(string $path, string $contents): string
+    public function putContents(string $path, string $contents): void
     {
-        return $this->makeUploadRequest($path, ['body' => $contents]);
+        $this->makeUploadRequest($path, ['body' => $contents]);
     }
 
-    public function upload(string $localPath, string $path): string
+    public function upload(string $localPath, string $path): void
     {
         $fileStream = fopen($localPath, 'r');
         if (false === $fileStream) {
             throw new Exception('The local file could not be opened.');
         }
 
-        return $this->makeUploadRequest($path, ['body' => $fileStream]);
+        $this->makeUploadRequest($path, ['body' => $fileStream]);
     }
 
     /**
      * @param array{body: mixed} $options
      */
-    private function makeUploadRequest(string $path, array $options): string
+    private function makeUploadRequest(string $path, array $options): void
     {
         $response = $this->httpClient->request('PUT', $this->normalizePath($path), $options);
 
@@ -105,7 +108,7 @@ class Client
         }
 
         if (201 === $response->getStatusCode()) {
-            return $response->getBody()->getContents();
+            return;
         }
 
         throw new Exception('Could not upload file');
@@ -130,15 +133,13 @@ class Client
         throw new Exception('Could not download file');
     }
 
-    public function download(string $path, string $localPath): string
+    public function download(string $path, string $localPath): void
     {
         $result = file_put_contents($localPath, $this->getContents($path));
 
         if (false === $result) {
             throw new Exception('The local file could not be opened for writing.');
         }
-
-        return $localPath;
     }
 
     public function exists(string $path): bool
@@ -224,5 +225,25 @@ class Client
         }
 
         return $errors;
+    }
+
+    /**
+     * @phpstan-param mixed $result
+     *
+     * @return FileInfo[]
+     */
+    private function convertIntoFileInfo($result): array
+    {
+        if (!is_array($result)) {
+            return [];
+        }
+
+        $items = [];
+
+        foreach ($result as $info) {
+            $items[] = new FileInfo($info);
+        }
+
+        return $items;
     }
 }

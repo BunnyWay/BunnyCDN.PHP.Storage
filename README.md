@@ -54,19 +54,7 @@ $client->download('remote/path/hello-world.txt', '/path/to/local/file.txt');
 $items = $client->listFiles('remote/path/');
 ```
 
-The StorageObject contains the following properties:
-- **Guid** - The unique GUID of the file
-- **UserId** - The ID of the BunnyCDN user that holds the file
-- **DateCreated** - The date when the file was created
-- **LastChanged** - The date when the file was last modified
-- **StorageZoneName** - The name of the storage zone to which the file is linked
-- **Path** - The path to the object
-- **ObjectName** - The name of the object
-- **Length** - The total of the object in bytes
-- **IsDirectory** - True if the object is a directory, otherwise false.
-- **ServerId** - The ID of the storage server that the file resides on
-- **StorageZoneId** - The ID of the storage zone that the object is linked to
-- **FullPath** - The full path to the file
+Returns an array of [FileInfo](src/FileInfo.php) objects.
 
 ---
 

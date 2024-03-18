@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### BC breaks
+
+- `listFiles` now returns an array of `Bunny\Storage\FileInfo`;
+- `delete`, `download`, `putContents`, `upload` now return `void`;
+
 ### Added
 
 - Support for directories in `Client::delete()` and `Client::deleteMultiple()`;
