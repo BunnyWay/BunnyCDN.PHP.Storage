@@ -166,6 +166,34 @@ class Client
         return isset($metadata['Guid']) && 36 === strlen($metadata['Guid']);
     }
 
+    public function info(string $path): FileInfo
+    {
+        if (str_ends_with($path, '/')) {
+            throw new \Exception('Directories are not supported.');
+        }
+
+        $response = $this->httpClient->request('DESCRIBE', $this->normalizePath($path));
+
+        if (401 === $response->getStatusCode()) {
+            throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
+        }
+
+        if (404 === $response->getStatusCode()) {
+            throw new FileNotFoundException($path);
+        }
+
+        if (200 !== $response->getStatusCode()) {
+            throw new Exception('Could not verify if the file exists');
+        }
+
+        $metadata = json_decode($response->getBody()->getContents(), true);
+        if (!is_array($metadata)) {
+            throw new Exception('Could not parse the JSON response');
+        }
+
+        return new FileInfo($metadata);
+    }
+
     private function normalizePath(string $path, bool $isDirectory = false): string
     {
         if (!str_starts_with($path, "/{$this->storageZoneName}/") && !str_starts_with($path, "{$this->storageZoneName}/")) {
