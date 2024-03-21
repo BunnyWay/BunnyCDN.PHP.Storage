@@ -23,10 +23,12 @@ The BunnyCDNStorage constructor takes the following parameters:
 
 ### Navigation:
 
-- [Upload](#uploading-objects)
-- [Download](#downloading-objects)
-- [List](#listing-objects)
-- [Delete](#deleting-objects)
+- [upload](#uploading-objects)
+- [download](#downloading-objects)
+- [listFiles](#listing-objects)
+- [info](#get-an-objects-details)
+- [delete](#deleting-objects)
+- [deleteMultiple](#delete-multiple-objects)
 - [putContents](#put-file-contents)
 - [getContents](#get-file-contents)
 
@@ -55,6 +57,16 @@ $items = $client->listFiles('remote/path/');
 ```
 
 Returns an array of [FileInfo](src/FileInfo.php) objects.
+
+---
+
+### Get an object's details
+
+```php
+$item = $client->info('remote/path/hello-world.txt');
+```
+
+Returns an instance of [FileInfo](src/FileInfo.php).
 
 ---
 
