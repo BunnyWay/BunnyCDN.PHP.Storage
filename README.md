@@ -40,6 +40,12 @@ The BunnyCDNStorage constructor takes the following parameters:
 $client->upload('/path/to/local/file.txt', 'remote/path/hello-world.txt');
 ```
 
+The checksum can be disabled using the `$withChecksum` parameter:
+
+```php
+$client->upload('/path/to/local/file.txt', 'remote/path/hello-world.txt', false);
+```
+
 ---
 
 ### Downloading objects
@@ -99,6 +105,13 @@ array(1) {
 ```php
 $content = 'Hello, world!';
 $client->putContents('hello-world.txt', $content);
+```
+
+The checksum can be disabled using the `$withChecksum` parameter:
+
+```php
+$content = 'Hello, world!';
+$client->putContents('hello-world.txt', $content, false);
 ```
 
 ---

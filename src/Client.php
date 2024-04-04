@@ -81,23 +81,36 @@ class Client
         throw new Exception($message);
     }
 
-    public function putContents(string $path, string $contents): void
+    public function putContents(string $path, string $contents, bool $withChecksum = true): void
     {
-        $this->makeUploadRequest($path, ['body' => $contents]);
+        $headers = [];
+        if ($withChecksum) {
+            $headers['Checksum'] = strtoupper(hash('sha256', $contents));
+        }
+
+        $this->makeUploadRequest($path, ['headers' => $headers, 'body' => $contents]);
     }
 
-    public function upload(string $localPath, string $path): void
+    public function upload(string $localPath, string $path, bool $withChecksum = true): void
     {
         $fileStream = fopen($localPath, 'r');
         if (false === $fileStream) {
             throw new Exception('The local file could not be opened.');
         }
 
-        $this->makeUploadRequest($path, ['body' => $fileStream]);
+        $headers = [];
+        if ($withChecksum) {
+            $hash = hash_file('sha256', $localPath);
+            if (false !== $hash) {
+                $headers['Checksum'] = strtoupper($hash);
+            }
+        }
+
+        $this->makeUploadRequest($path, ['headers' => $headers, 'body' => $fileStream]);
     }
 
     /**
-     * @param array{body: mixed} $options
+     * @param array{headers: array<array-key, mixed>, body: mixed} $options
      */
     private function makeUploadRequest(string $path, array $options): void
     {
@@ -105,6 +118,10 @@ class Client
 
         if (401 === $response->getStatusCode()) {
             throw new AuthenticationException($this->storageZoneName, $this->apiAccessKey);
+        }
+
+        if (400 === $response->getStatusCode()) {
+            throw new Exception('Checksum and file contents mismatched');
         }
 
         if (201 === $response->getStatusCode()) {
