@@ -80,4 +80,70 @@ class ClientTest extends \PHPUnit\Framework\TestCase
             ['bunny-logo.jpg', false, null],
         ];
     }
+
+    public function testInfo()
+    {
+        $body = $this->createMock(\Psr\Http\Message\StreamInterface::class);
+        $body->expects($this->atLeastOnce())->method('getContents')->willReturn(file_get_contents(__DIR__.'/_files/a.txt.describe.json'));
+
+        $response = $this->createMock(\Psr\Http\Message\ResponseInterface::class);
+        $response->expects($this->atLeastOnce())->method('getStatusCode')->willReturn(200);
+        $response->expects($this->atLeastOnce())->method('getBody')->willReturn($body);
+
+        $httpClient = $this->createMock(\GuzzleHttp\Client::class);
+        $httpClient->expects($this->once())->method('request')->with('DESCRIBE', 'test/a.txt', [])->willReturn($response);
+
+        $client = new Client('abc1234d', 'test', Region::FALKENSTEIN, $httpClient);
+        $info = $client->info('/a.txt');
+
+        $this->assertInstanceOf(FileInfo::class, $info);
+    }
+
+    /**
+     * @dataProvider infoDatesDataProvider
+     */
+    public function testInfoDates(bool $expectException, string $expectedCreated, string $expectedModified, string $payloadCreated, string $payloadModified)
+    {
+        $payload = file_get_contents(__DIR__.'/_files/a.txt.describe.json');
+        $payloadJson = json_decode($payload, true);
+        $payloadJson['DateCreated'] = $payloadCreated;
+        $payloadJson['LastChanged'] = $payloadModified;
+        $payload = json_encode($payloadJson);
+
+        $body = $this->createMock(\Psr\Http\Message\StreamInterface::class);
+        $body->expects($this->atLeastOnce())->method('getContents')->willReturn($payload);
+
+        $response = $this->createMock(\Psr\Http\Message\ResponseInterface::class);
+        $response->expects($this->atLeastOnce())->method('getStatusCode')->willReturn(200);
+        $response->expects($this->atLeastOnce())->method('getBody')->willReturn($body);
+
+        $httpClient = $this->createMock(\GuzzleHttp\Client::class);
+        $httpClient->expects($this->once())->method('request')->with('DESCRIBE', 'test/a.txt', [])->willReturn($response);
+
+        if ($expectException) {
+            $this->expectException(Exception::class);
+        }
+
+        $client = new Client('abc1234d', 'test', Region::FALKENSTEIN, $httpClient);
+        $info = $client->info('/a.txt');
+
+        if (!$expectException) {
+            $this->assertEquals($expectedCreated, $info->getDateCreated()->format('Y-m-d H:i:s.v'));
+            $this->assertEquals($expectedModified, $info->getDateModified()->format('Y-m-d H:i:s.v'));
+        }
+    }
+
+    public static function infoDatesDataProvider(): array
+    {
+        return [
+            [false, '2024-01-01 00:00:00.000', '2024-01-01 00:00:00.000', '2024-01-01T00:00:00.000', '2024-01-01T00:00:00.000'],
+            [false, '2024-01-01 00:00:00.000', '2024-01-01 00:00:00.000', '2024-01-01T00:00:00',     '2024-01-01T00:00:00'],
+            [false, '2024-01-01 00:00:00.123', '2024-01-01 00:00:00.456', '2024-01-01T00:00:00.123', '2024-01-01T00:00:00.456'],
+            [false, '2001-02-03 04:05:06.000', '2001-02-03 04:05:06.789', '2001-02-03T04:05:06',     '2001-02-03T04:05:06.789'],
+
+            // invalid formats
+            [true, '', '', '', ''],
+            [true, '', '', '01/02/03 04:05:06', '01/02/03 04:05:06'],
+        ];
+    }
 }

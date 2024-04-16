@@ -208,7 +208,7 @@ class Client
             throw new Exception('Could not parse the JSON response');
         }
 
-        return new FileInfo($metadata);
+        return $this->createFileInfo($metadata);
     }
 
     private function normalizePath(string $path, bool $isDirectory = false): string
@@ -286,9 +286,33 @@ class Client
         $items = [];
 
         foreach ($result as $info) {
-            $items[] = new FileInfo($info);
+            $items[] = $this->createFileInfo($info);
         }
 
         return $items;
+    }
+
+    /**
+     * @param array<array-key, mixed> $data
+     */
+    private function createFileInfo(array $data): FileInfo
+    {
+        $path = $data['ObjectName'].'/'.$data['Path'];
+
+        foreach (['DateCreated', 'LastChanged'] as $field) {
+            $value = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s.v', $data[$field]);
+
+            if (false === $value) {
+                $value = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s', $data[$field]);
+            }
+
+            if (false === $value) {
+                throw new Exception('Invalid '.$field.' for file '.$path);
+            }
+
+            $data[$field] = $value;
+        }
+
+        return new FileInfo($data['Guid'], $data['Path'], $data['ObjectName'], $data['Length'], $data['IsDirectory'], \strtolower((string) $data['Checksum']), $data['DateCreated'], $data['LastChanged']);
     }
 }

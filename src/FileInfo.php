@@ -13,28 +13,14 @@ class FileInfo
     private \DateTimeImmutable $dateCreated;
     private \DateTimeImmutable $dateModified;
 
-    /**
-     * @param array<string, string|int|bool> $data
-     */
-    public function __construct(array $data)
+    public function __construct(string $guid, string $path, string $name, int $size, bool $isDirectory, string $checksum, \DateTimeImmutable $dateCreated, \DateTimeImmutable $dateModified)
     {
-        $this->guid = (string) $data['Guid'];
-        $this->path = (string) $data['Path'];
-        $this->name = (string) $data['ObjectName'];
-        $this->size = (int) $data['Length'];
-        $this->isDirectory = (bool) $data['IsDirectory'];
-        $this->checksum = \strtolower((string) $data['Checksum']);
-
-        $dateCreated = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s.v', (string) $data['DateCreated']);
-        if (false === $dateCreated) {
-            throw new Exception('Invalid DateCreated for file '.$this->path);
-        }
-
-        $dateModified = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s.v', (string) $data['LastChanged']);
-        if (false === $dateModified) {
-            throw new Exception('Invalid LastChanged for file '.$this->path);
-        }
-
+        $this->guid = $guid;
+        $this->path = $path;
+        $this->name = $name;
+        $this->size = $size;
+        $this->isDirectory = $isDirectory;
+        $this->checksum = $checksum;
         $this->dateCreated = $dateCreated;
         $this->dateModified = $dateModified;
     }
