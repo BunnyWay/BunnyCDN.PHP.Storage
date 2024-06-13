@@ -121,7 +121,8 @@ class Client
         }
 
         if (400 === $response->getStatusCode()) {
-            throw new Exception('Checksum and file contents mismatched');
+            $responseBody = json_decode($response->getBody()->getContents(), true);
+            throw new Exception($responseBody['Message'] ?? 'Checksum and file contents mismatched');
         }
 
         if (201 === $response->getStatusCode()) {
