@@ -121,8 +121,15 @@ class Client
         }
 
         if (400 === $response->getStatusCode()) {
-            $responseBody = json_decode($response->getBody()->getContents(), true);
-            throw new Exception($responseBody['Message'] ?? 'Checksum and file contents mismatched');
+            /** @var bool|array{Message: string}|null $json */
+            $json = json_decode($response->getBody()->getContents(), true);
+            $message = 'Checksum and file contents mismatched';
+
+            if (isset($json['Message']) && is_array($json) && is_string($json['Message'])) {
+                $message = (string) $json['Message'];
+            }
+
+            throw new Exception($message);
         }
 
         if (201 === $response->getStatusCode()) {
