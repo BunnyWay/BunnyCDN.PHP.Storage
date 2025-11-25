@@ -1,104 +1,105 @@
 <?php
 
-require_once __DIR__ . "/../../vendor/autoload.php";
+require_once __DIR__.'/../../vendor/autoload.php';
 
 use Bunny\Storage\Client;
 use Bunny\Storage\Region;
 
-$apiKey = getenv("BUNNY_STORAGE_API_KEY");
-$storageZone = getenv("BUNNY_STORAGE_ZONE");
-$region = getenv("BUNNY_STORAGE_REGION") ?: "de";
+$apiKey = getenv('BUNNY_STORAGE_API_KEY');
+$storageZone = getenv('BUNNY_STORAGE_ZONE');
+$region = getenv('BUNNY_STORAGE_REGION') ?: 'de';
 
 if (!$apiKey || !$storageZone) {
-    die(
-        "Error: BUNNY_STORAGE_API_KEY and BUNNY_STORAGE_ZONE environment variables are required."
+    exit(
+        'Error: BUNNY_STORAGE_API_KEY and BUNNY_STORAGE_ZONE environment variables are required.'
     );
 }
 
 $regionMap = [
-    "de" => Region::FALKENSTEIN,
-    "uk" => Region::LONDON,
-    "se" => Region::STOCKHOLM,
-    "ny" => Region::NEW_YORK,
-    "la" => Region::LOS_ANGELES,
-    "sg" => Region::SINGAPORE,
-    "syd" => Region::SYDNEY,
-    "br" => Region::SAO_PAULO,
-    "jh" => Region::JOHANNESBURG,
+    'de' => Region::FALKENSTEIN,
+    'uk' => Region::LONDON,
+    'se' => Region::STOCKHOLM,
+    'ny' => Region::NEW_YORK,
+    'la' => Region::LOS_ANGELES,
+    'sg' => Region::SINGAPORE,
+    'syd' => Region::SYDNEY,
+    'br' => Region::SAO_PAULO,
+    'jh' => Region::JOHANNESBURG,
 ];
 
 $regionConstant = $regionMap[$region] ?? Region::FALKENSTEIN;
 
 $client = new Client($apiKey, $storageZone, $regionConstant);
 
-$message = "";
-$messageType = "";
+$message = '';
+$messageType = '';
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_FILES["file"])) {
-    $file = $_FILES["file"];
+if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_FILES['file'])) {
+    $file = $_FILES['file'];
 
-    if ($file["error"] === UPLOAD_ERR_OK) {
-        $tmpPath = $file["tmp_name"];
-        $fileName = basename($file["name"]);
+    if (UPLOAD_ERR_OK === $file['error']) {
+        $tmpPath = $file['tmp_name'];
+        $fileName = basename($file['name']);
         $remotePath = "uploads/{$fileName}";
 
         try {
             $client->upload($tmpPath, $remotePath);
             $message = "File '{$fileName}' uploaded successfully!";
-            $messageType = "success";
+            $messageType = 'success';
         } catch (Exception $e) {
             $message = "Upload failed: {$e->getMessage()}";
-            $messageType = "error";
+            $messageType = 'error';
         }
     } else {
-        $errorMessage = getUploadErrorMessage($file["error"]);
+        $errorMessage = getUploadErrorMessage($file['error']);
         $message = "Upload error: {$errorMessage}";
-        $messageType = "error";
+        $messageType = 'error';
     }
 }
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["delete"])) {
-    $fileToDelete = $_POST["delete"];
+if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['delete'])) {
+    $fileToDelete = $_POST['delete'];
     try {
         $client->delete("uploads/{$fileToDelete}");
         $message = "File '{$fileToDelete}' deleted successfully!";
-        $messageType = "success";
+        $messageType = 'success';
     } catch (Exception $e) {
         $message = "Delete failed: {$e->getMessage()}";
-        $messageType = "error";
+        $messageType = 'error';
     }
 }
 
 $files = [];
 try {
-    $files = $client->listFiles("uploads/");
+    $files = $client->listFiles('uploads/');
 } catch (Exception $e) {
     // Directory might not exist yet
 }
 
 function getUploadErrorMessage(int $errorCode): string
 {
-    return match ($errorCode) {
-        UPLOAD_ERR_INI_SIZE => "File exceeds upload_max_filesize directive",
-        UPLOAD_ERR_FORM_SIZE => "File exceeds MAX_FILE_SIZE directive",
-        UPLOAD_ERR_PARTIAL => "File was only partially uploaded",
-        UPLOAD_ERR_NO_FILE => "No file was uploaded",
-        UPLOAD_ERR_NO_TMP_DIR => "Missing temporary folder",
-        UPLOAD_ERR_CANT_WRITE => "Failed to write file to disk",
-        UPLOAD_ERR_EXTENSION => "A PHP extension stopped the upload",
-        default => "Unknown upload error",
-    };
+    $errors = [
+        UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize directive',
+        UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE directive',
+        UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+        UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+        UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+        UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the upload',
+    ];
+
+    return $errors[$errorCode] ?? 'Unknown upload error';
 }
 
 function formatBytes(int $bytes, int $precision = 2): string
 {
-    $units = ["B", "KB", "MB", "GB", "TB"];
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
     $bytes = max($bytes, 0);
     $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
     $pow = min($pow, count($units) - 1);
     $bytes /= 1 << 10 * $pow;
 
-    return round($bytes, $precision) . " " . $units[$pow];
+    return round($bytes, $precision).' '.$units[$pow];
 }
 ?>
 <!DOCTYPE html>
@@ -157,11 +158,11 @@ function formatBytes(int $bytes, int $precision = 2): string
 <body>
     <h1>Bunny Storage - File Upload</h1>
 
-    <?php if ($message): ?>
-        <div class="message <?= $messageType ?>"><?= htmlspecialchars(
-    $message,
-) ?></div>
-    <?php endif; ?>
+    <?php if ($message) { ?>
+        <div class="message <?php echo $messageType; ?>"><?php echo htmlspecialchars(
+            $message,
+        ); ?></div>
+    <?php } ?>
 
     <div class="card">
         <h2>Upload a File</h2>
@@ -173,9 +174,9 @@ function formatBytes(int $bytes, int $precision = 2): string
 
     <div class="card">
         <h2>Uploaded Files</h2>
-        <?php if (empty($files)): ?>
+        <?php if (empty($files)) { ?>
             <p class="empty">No files uploaded yet.</p>
-        <?php else: ?>
+        <?php } else { ?>
             <table>
                 <thead>
                     <tr>
@@ -186,30 +187,30 @@ function formatBytes(int $bytes, int $precision = 2): string
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($files as $file): ?>
-                        <?php if (!$file->isDirectory()): ?>
+                    <?php foreach ($files as $file) { ?>
+                        <?php if (!$file->isDirectory()) { ?>
                             <tr>
-                                <td><?= htmlspecialchars(
+                                <td><?php echo htmlspecialchars(
                                     $file->getName(),
-                                ) ?></td>
-                                <td><?= formatBytes($file->getSize()) ?></td>
-                                <td><?= $file
+                                ); ?></td>
+                                <td><?php echo formatBytes($file->getSize()); ?></td>
+                                <td><?php echo $file
                                     ->getDateModified()
-                                    ->format("Y-m-d H:i") ?></td>
+                                    ->format('Y-m-d H:i'); ?></td>
                                 <td>
                                     <form method="POST" style="display:inline;">
-                                        <input type="hidden" name="delete" value="<?= htmlspecialchars(
+                                        <input type="hidden" name="delete" value="<?php echo htmlspecialchars(
                                             $file->getName(),
-                                        ) ?>">
+                                        ); ?>">
                                         <button type="submit" class="delete" onclick="return confirm('Delete this file?')">Delete</button>
                                     </form>
                                 </td>
                             </tr>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
+                        <?php } ?>
+                    <?php } ?>
                 </tbody>
             </table>
-        <?php endif; ?>
+        <?php } ?>
     </div>
 </body>
 </html>
