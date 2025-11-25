@@ -1,18 +1,11 @@
 {
-    "name": "bunnycdn/storage-example-file-upload",
-    "description": "File upload form example for Bunny Storage SDK",
-    "type": "project",
-    "require": {
-        "php": ">=8.1",
-        "bunnycdn/storage": "*"
-    },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../../"
-        }
-    ],
-    "scripts": {
-        "start": "php -S localhost:8000 index.php"
-    }
+  "name": "bunny/storage-form-upload-example",
+  "description": "Form upload example for Bunny Storage PHP SDK",
+  "type": "project",
+  "require": {
+    "php": ">=8.1"
+  },
+  "scripts": {
+    "start": "php -S localhost:8000 index.php"
+  }
 }

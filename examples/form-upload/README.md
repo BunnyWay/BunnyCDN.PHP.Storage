@@ -1,4 +1,4 @@
-# File Upload Example
+# Form Upload Example
 
 This example demonstrates how to handle file uploads from an HTML form and store them in Bunny Storage.
 
@@ -36,8 +36,7 @@ Then visit http://localhost:8000 in your browser.
 
 ## What This Example Does
 
-1. Displays an HTML form for file upload
-2. Handles the form submission
+1. Displays a simple HTML form for file upload
+2. Handles the form submission via POST
 3. Uploads the file to Bunny Storage in an `uploads/` directory
-4. Lists all uploaded files with their details
-5. Provides download links for each file
+4. Shows a success or error message
